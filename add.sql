@@ -70,3 +70,103 @@ INSERT INTO projects (name, description, status, priority, start_date, end_date,
 ('電商網站重構', '重新設計電商網站前端架構', 'in_progress', 'high', '2025-01-01', '2025-03-31', 1),
 ('手機 App 開發', '開發 iOS 和 Android 版本', 'planning', 'medium', '2025-02-01', '2025-06-30', 2),
 ('後台管理系統', '建立內部管理後台', 'in_progress', 'urgent', '2025-01-15', '2025-04-15', 1);
+
+INSERT INTO tasks (project_id, title, status, priority, assignee_id) VALUES
+(1, '設計首頁', 'todo', 'high', 1),
+(1, '開發購物車', 'in_progress', 'medium', 2);
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- 評論表
+CREATE TABLE comments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    task_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 檔案附件表
+CREATE TABLE attachments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    task_id INT,
+    project_id INT,
+    user_id INT NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    original_name VARCHAR(255) NOT NULL,
+    file_size INT NOT NULL,
+    file_type VARCHAR(100),
+    file_path VARCHAR(500) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 通知表
+CREATE TABLE notifications (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    type ENUM('task_assigned', 'task_comment', 'task_due', 'project_invite', 'mention') NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    link VARCHAR(500),
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 標籤表
+CREATE TABLE tags (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    color VARCHAR(20) DEFAULT '#3B82F6',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 任務標籤關聯表
+CREATE TABLE task_tags (
+    task_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    PRIMARY KEY (task_id, tag_id),
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+-- 活動日誌表
+CREATE TABLE activity_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    action VARCHAR(50) NOT NULL,
+    entity_type ENUM('project', 'task', 'user', 'comment') NOT NULL,
+    entity_id INT NOT NULL,
+    old_value TEXT,
+    new_value TEXT,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- 時間記錄表
+CREATE TABLE time_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    task_id INT NOT NULL,
+    user_id INT NOT NULL,
+    hours DECIMAL(5,2) NOT NULL,
+    description TEXT,
+    log_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 新增預設標籤
+INSERT INTO tags (name, color) VALUES
+('Bug', '#EF4444'),
+('Feature', '#22C55E'),
+('Enhancement', '#3B82F6'),
+('Documentation', '#8B5CF6'),
+('Urgent', '#F97316');
