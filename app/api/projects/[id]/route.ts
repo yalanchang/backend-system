@@ -3,13 +3,12 @@ import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { Project } from '@/lib/types';
 
-
 // 取得單一專案
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> }
 ) {
-    const { id } = await params;
+    const { id } = await context.params;
 
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
@@ -33,10 +32,10 @@ export async function GET(
 // 更新專案
 export async function PUT(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> }
   ) {
     try {
-      const { id } = await params;
+      const { id } = await context.params;
       const body = await request.json();
       
       const {
@@ -158,9 +157,9 @@ export async function PUT(
 // 刪除專案
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> }
 ) {
-    const { id } = await params;
+    const { id } = await context.params;
 
     try {
         await pool.query<ResultSetHeader>('DELETE FROM projects WHERE id = ?', [id]);

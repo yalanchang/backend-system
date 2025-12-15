@@ -1,85 +1,95 @@
-// app/api/calendar/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
-// GET - 獲取單一事件
-export async function GET(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-) {
+// GET - 獲取行事曆事件
+export async function GET(request: NextRequest) {
     try {
-        const { id: eventId } = await params; 
-        if (!eventId) {
+        const { searchParams } = new URL(request.url);
+        const startDate = searchParams.get('start_date');
+        const endDate = searchParams.get('end_date');
+        const projectId = searchParams.get('project_id');
+        const eventType = searchParams.get('event_type');
+        const excludeTypes = searchParams.get('exclude_types');
+
+        if (!startDate || !endDate) {
             return NextResponse.json({
                 success: false,
-                error: '缺少事件 ID'
+                error: '缺少 start_date 或 end_date 參數'
             }, { status: 400 });
         }
-        const [events]: any = await pool.execute(
-            `SELECT ce.*, p.name as project_name 
-             FROM calendar_events ce 
-             LEFT JOIN projects p ON ce.project_id = p.id 
-             WHERE ce.id = ?`,
-            [eventId]
-        );
 
-        if (events.length === 0) {
-            return NextResponse.json({
-                success: false,
-                error: '事件不存在'
-            }, { status: 404 });
+        // 基礎查詢
+        let query = `
+            SELECT ce.*, p.name as project_name 
+            FROM calendar_events ce 
+            LEFT JOIN projects p ON ce.project_id = p.id 
+            WHERE start_time >= ? AND end_time <= ?
+        `;
+        const params: any[] = [startDate, endDate];
+
+        // 添加篩選條件
+        if (projectId) {
+            query += ' AND ce.project_id = ?';
+            params.push(projectId);
         }
 
-        const event = events[0];
+        if (eventType) {
+            query += ' AND ce.event_type = ?';
+            params.push(eventType);
+        }
+
+        if (excludeTypes) {
+            const types = excludeTypes.split(',');
+            if (types.length > 0) {
+                query += ` AND ce.event_type NOT IN (${types.map(() => '?').join(',')})`;
+                params.push(...types);
+            }
+        }
+
+        query += ' ORDER BY start_time ASC';
+
+        const [rows]: any = await pool.execute(query, params);
 
         return NextResponse.json({
             success: true,
-            data: {
-                id: event.id,
-                title: event.title,
-                description: event.description || '',
-                start_time: event.start_time,
-                end_time: event.end_time,
-                event_type: event.event_type,
-                project_id: event.project_id || null,
-                project_name: event.project_name || null,
-                location: event.location || '',
-                color: event.color || '#3B82F6',
-                all_day: event.all_day === 1,
-                created_at: event.created_at,
-                updated_at: event.updated_at,
-                participants: [] 
-            }
+            data: rows.map((row: any) => ({
+                id: row.id,
+                title: row.title,
+                description: row.description,
+                start_time: row.start_time,
+                end_time: row.end_time,
+                event_type: row.event_type,
+                project_id: row.project_id,
+                project_name: row.project_name,
+                location: row.location,
+                color: row.color,
+                all_day: row.all_day === 1,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+                participants: []
+            }))
         });
 
     } catch (error) {
-        console.error('獲取事件錯誤:', error);
+        console.error('獲取行事曆事件錯誤:', error);
         return NextResponse.json({
             success: false,
-            error: '獲取事件失敗'
+            error: '獲取行事曆事件失敗'
         }, { status: 500 });
     }
 }
 
-// PUT - 更新事件
-export async function PUT(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-) {
+// POST - 建立新事件
+export async function POST(request: NextRequest) {
     const connection = await pool.getConnection();
     
     try {
-        
         await connection.beginTransaction();
-        const { id: eventId } = await params;  
-        if (!eventId) {
-            return NextResponse.json({
-                success: false,
-                error: '缺少事件 ID'
-            }, { status: 400 });
-        }
         
         const body = await request.json();
+        const eventId = require('uuid').v4();
+
+        // 驗證必要欄位
         const requiredFields = ['title', 'start_time', 'end_time', 'event_type'];
         for (const field of requiredFields) {
             if (!body[field]) {
@@ -90,254 +100,49 @@ export async function PUT(
             }
         }
 
-        // 檢查事件是否存在
-        const [existingEvents]: any = await connection.execute(
-            'SELECT id FROM calendar_events WHERE id = ?',
-            [eventId]
-        );
-
-        if (existingEvents.length === 0) {
-            return NextResponse.json({
-                success: false,
-                error: '事件不存在'
-            }, { status: 404 });
-        }
-        const formatDateTime = (dateStr: string) => {
-            const date = new Date(dateStr);
-            return date.toISOString().slice(0, 19).replace('T', ' ');
-        };
+        // 插入事件
         await connection.execute(
-            `UPDATE calendar_events 
-             SET title = ?, 
-                 description = ?, 
-                 start_time = ?, 
-                 end_time = ?, 
-                 event_type = ?, 
-                 project_id = ?, 
-                 location = ?, 
-                 color = ?, 
-                 all_day = ?, 
-                 updated_at = NOW()
-             WHERE id = ?`,
+            `INSERT INTO calendar_events 
+             (id, title, description, start_time, end_time, event_type, project_id, location, color, all_day) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
+                eventId,
                 body.title,
                 body.description || null,
-                formatDateTime(body.start_time),
-                formatDateTime(body.end_time),
+                new Date(body.start_time).toISOString().slice(0, 19).replace('T', ' '),
+                new Date(body.end_time).toISOString().slice(0, 19).replace('T', ' '),
                 body.event_type,
                 body.project_id || null,
                 body.location || null,
                 body.color || null,
-                body.all_day ? 1 : 0,
-                eventId
+                body.all_day ? 1 : 0
             ]
         );
 
-        // 獲取更新後的事件資料
-        const [updatedEvents]: any = await connection.execute(
-            `SELECT ce.*, p.name as project_name 
-             FROM calendar_events ce 
-             LEFT JOIN projects p ON ce.project_id = p.id 
-             WHERE ce.id = ?`,
-            [eventId]
-        );
-
         await connection.commit();
 
         return NextResponse.json({
             success: true,
             data: {
-                id: updatedEvents[0].id,
-                title: updatedEvents[0].title,
-                description: updatedEvents[0].description || '',
-                start_time: updatedEvents[0].start_time,
-                end_time: updatedEvents[0].end_time,
-                event_type: updatedEvents[0].event_type,
-                project_id: updatedEvents[0].project_id || null,
-                project_name: updatedEvents[0].project_name || null,
-                location: updatedEvents[0].location || '',
-                color: updatedEvents[0].color || '#3B82F6',
-                all_day: updatedEvents[0].all_day === 1,
-                created_at: updatedEvents[0].created_at,
-                updated_at: updatedEvents[0].updated_at
+                id: eventId,
+                title: body.title,
+                description: body.description,
+                start_time: body.start_time,
+                end_time: body.end_time,
+                event_type: body.event_type,
+                project_id: body.project_id,
+                location: body.location,
+                color: body.color,
+                all_day: body.all_day || false
             }
         });
 
-    } catch (error: any) {
+    } catch (error) {
         await connection.rollback();
-        console.error('更新事件錯誤詳細:', error);
-        
+        console.error('建立事件錯誤:', error);
         return NextResponse.json({
             success: false,
-            error: '更新事件失敗: ' + error.message
-        }, { status: 500 });
-    } finally {
-        connection.release();
-    }
-}
-
-// DELETE - 刪除事件
-export async function DELETE(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-) {
-    const connection = await pool.getConnection();
-    
-    try {
-        await connection.beginTransaction();
-        
-        const { id: eventId } = await params;  // ← 加 await
-        if (!eventId) {
-            return NextResponse.json({
-                success: false,
-                error: '缺少事件 ID'
-            }, { status: 400 });
-        }
-        const [existingEvents]: any = await connection.execute(
-            'SELECT id FROM calendar_events WHERE id = ?',
-            [eventId]
-        );
-
-        if (existingEvents.length === 0) {
-            return NextResponse.json({
-                success: false,
-                error: '事件不存在'
-            }, { status: 404 });
-        }
-
-        // 刪除事件
-        await connection.execute(
-            'DELETE FROM calendar_events WHERE id = ?',
-            [eventId]
-        );
-
-        await connection.commit();
-
-        return NextResponse.json({
-            success: true,
-            message: '事件已刪除'
-        });
-
-    } catch (error: any) {
-        await connection.rollback();
-        console.error('刪除事件錯誤:', error);
-        return NextResponse.json({
-            success: false,
-            error: '刪除事件失敗: ' + error.message
-        }, { status: 500 });
-    } finally {
-        connection.release();
-    }
-}
-
-// PATCH - 部分更新事件
-export async function PATCH(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-) {
-    const connection = await pool.getConnection();
-    
-    try {
-        await connection.beginTransaction();
-        
-        const { id: eventId } = await params;  
-
-        if (!eventId) {
-            return NextResponse.json({
-                success: false,
-                error: '缺少事件 ID'
-            }, { status: 400 });
-        }        const body = await request.json();
-        console.log('部分更新事件:', { eventId, body });
-
-
-        // 檢查事件是否存在
-        const [existingEvents]: any = await connection.execute(
-            'SELECT id FROM calendar_events WHERE id = ?',
-            [eventId]
-        );
-
-        if (existingEvents.length === 0) {
-            return NextResponse.json({
-                success: false,
-                error: '事件不存在'
-            }, { status: 404 });
-        }
-
-        const updateFields: string[] = [];
-        const updateValues: any[] = [];
-
-        // 允許更新的欄位
-        const allowedFields = [
-            'title', 'description', 'start_time', 'end_time',
-            'event_type', 'project_id', 'location', 'color', 'all_day'
-        ];
-
-        allowedFields.forEach(field => {
-            if (body[field] !== undefined) {
-                updateFields.push(`${field} = ?`);
-                if (field === 'start_time' || field === 'end_time') {
-                    updateValues.push(new Date(body[field]).toISOString().slice(0, 19).replace('T', ' '));
-                } else if (field === 'all_day') {
-                    updateValues.push(body[field] ? 1 : 0);
-                } else {
-                    updateValues.push(body[field] || null);
-                }
-            }
-        });
-
-        if (updateFields.length === 0) {
-            return NextResponse.json({
-                success: false,
-                error: '沒有提供要更新的欄位'
-            }, { status: 400 });
-        }
-
-        updateFields.push('updated_at = NOW()');
-
-        await connection.execute(
-            `UPDATE calendar_events 
-             SET ${updateFields.join(', ')} 
-             WHERE id = ?`,
-            [...updateValues, eventId]
-        );
-
-        await connection.commit();
-
-        // 獲取更新後的事件
-        const [updatedEvents]: any = await connection.execute(
-            `SELECT ce.*, p.name as project_name 
-             FROM calendar_events ce 
-             LEFT JOIN projects p ON ce.project_id = p.id 
-             WHERE ce.id = ?`,
-            [eventId]
-        );
-
-        return NextResponse.json({
-            success: true,
-            data: {
-                id: updatedEvents[0].id,
-                title: updatedEvents[0].title,
-                description: updatedEvents[0].description || '',
-                start_time: updatedEvents[0].start_time,
-                end_time: updatedEvents[0].end_time,
-                event_type: updatedEvents[0].event_type,
-                project_id: updatedEvents[0].project_id || null,
-                project_name: updatedEvents[0].project_name || null,
-                location: updatedEvents[0].location || '',
-                color: updatedEvents[0].color || '#3B7280',
-                all_day: updatedEvents[0].all_day === 1,
-                created_at: updatedEvents[0].created_at,
-                updated_at: updatedEvents[0].updated_at
-            }
-        });
-
-    } catch (error: any) {
-        await connection.rollback();
-        console.error('部分更新事件錯誤:', error);
-        return NextResponse.json({
-            success: false,
-            error: '更新事件失敗: ' + error.message
+            error: '建立事件失敗'
         }, { status: 500 });
     } finally {
         connection.release();
