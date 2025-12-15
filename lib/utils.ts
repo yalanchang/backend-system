@@ -20,20 +20,22 @@ export const formatCurrency = (amount: number, decimals: number = 0): string => 
    * @param dateString 日期字串或Date物件
    * @returns 格式化後的中文日期字串
    */
-  export const formatDate = (dateString: string | Date): string => {
-    if (!dateString) return '未設定';
-    
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    
-    if (isNaN(date.getTime())) return '日期格式錯誤';
-    
+  export function formatDate(dateString?: string | null): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-TW');
+}
+
+// 格式化日期 - 2025年3月29日
+export function formatDateChinese(dateString?: string | null): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
     return date.toLocaleDateString('zh-TW', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long'
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     });
-  };
+}
   
   /**
    * 簡短日期格式 (YYYY/MM/DD)
@@ -233,3 +235,15 @@ export const formatCurrency = (amount: number, decimals: number = 0): string => 
       difference: (actualHours || 0) - (estimatedHours || 0)
     };
   };
+
+  export function formatDateTime(dateString?: string | null): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}

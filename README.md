@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 專案管理系統 (Project Management System)
 
-## Getting Started
+一個現代化的專案管理後台系統，使用 Next.js 15 + React + MySQL 構建。
 
-First, run the development server:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 功能特色
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 核心功能
+- **專案管理** - 建立、編輯、刪除專案，追蹤進度
+- **任務管理** - 看板式任務管理，支援拖拉排序
+- **使用者管理** - 角色權限控制（管理員/經理/成員）
+- **行事曆** - 視覺化時程管理，支援多種檢視模式
+- **報表統計** - 圖表化數據分析
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 進階功能
+- **通知系統** - 即時站內通知
+- **全站搜尋** - 快速搜尋專案、任務、使用者（支援 Ctrl+K）
+- **活動日誌** - 追蹤所有操作記錄
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 使用者體驗
+- **多元登入** - 支援 Email/密碼 與 Google OAuth
+- **響應式設計** - 支援桌面與行動裝置
+- **現代化 UI** - 使用 Tailwind CSS 打造
 
-## Learn More
+## 技術棧
 
-To learn more about Next.js, take a look at the following resources:
+### 前端
+- **框架**: Next.js 15 (App Router)
+- **語言**: TypeScript
+- **樣式**: Tailwind CSS
+- **圖表**: Chart.js / react-chartjs-2
+- **行事曆**: react-big-calendar
+- **圖示**: react-icons
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 後端
+- **API**: Next.js API Routes
+- **認證**: NextAuth.js
+- **資料庫**: MySQL 8
+- **ORM**: mysql2
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 開發工具
+- **套件管理**: npm
+- **版本控制**: Git

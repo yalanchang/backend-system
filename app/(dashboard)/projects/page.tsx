@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { formatDate } from '@/lib/utils';
 import { Project } from '@/types';
 
 export default function ProjectsPage() {
@@ -106,14 +107,15 @@ export default function ProjectsPage() {
 }
 
 function ProjectCard({ project, onDelete }: { project: Project; onDelete: () => void }) {
-    const progress = project.task_count 
+ 
+    const progress = project.task_count && project.task_count > 0
         ? Math.round((project.completed_tasks || 0) / project.task_count * 100) 
         : 0;
 
     return (
         <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
-                <h3 className="font-bold text-lg">{project.name}</h3>
+                <h3 className="font-bold text-lg text-gray-900">{project.name}</h3>
                 <PriorityBadge priority={project.priority} />
             </div>
 
@@ -124,8 +126,8 @@ function ProjectCard({ project, onDelete }: { project: Project; onDelete: () => 
             {/* 進度條 */}
             <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">
-                    <span>進度</span>
-                    <span>{progress}%</span>
+                    <span className="text-gray-700">進度</span>
+                    <span className="text-gray-700">{progress}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
@@ -133,17 +135,20 @@ function ProjectCard({ project, onDelete }: { project: Project; onDelete: () => 
                         style={{ width: `${progress}%` }}
                     />
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                    {project.completed_tasks || 0} / {project.task_count || 0} 任務完成
+                </p>
             </div>
 
-            <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
+            <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
                 <span>👤 {project.owner_name || '未指派'}</span>
-                <span>📅 {project.end_date || '無截止日'}</span>
-            </div>
+                <span>📅 {formatDate(project.end_date) || '無截止日'}</span>
+                </div>
 
             <div className="flex gap-2">
                 <Link
                     href={`/projects/${project.id}`}
-                    className="flex-1 text-center px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200"
+                    className="flex-1 text-center px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-800"
                 >
                     查看
                 </Link>

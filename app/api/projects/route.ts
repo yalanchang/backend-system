@@ -12,10 +12,18 @@ export async function GET(request: NextRequest) {
             SELECT 
                 p.*,
                 u.name as owner_name,
-                (SELECT COUNT(*) FROM tasks WHERE project_id = p.id) as task_count,
-                (SELECT COUNT(*) FROM tasks WHERE project_id = p.id AND status = 'done') as completed_tasks
+                COALESCE(task_stats.task_count, 0) as task_count,
+                COALESCE(task_stats.completed_tasks, 0) as completed_tasks
             FROM projects p
             LEFT JOIN users u ON p.owner_id = u.id
+            LEFT JOIN (
+                SELECT 
+                    project_id,
+                    COUNT(*) as task_count,
+                    SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed_tasks
+                FROM tasks
+                GROUP BY project_id
+            ) task_stats ON p.id = task_stats.project_id
             WHERE 1=1
         `;
         const params: any[] = [];
@@ -34,7 +42,15 @@ export async function GET(request: NextRequest) {
 
         const [rows] = await pool.query<RowDataPacket[]>(query, params);
 
-        return NextResponse.json({ success: true, data: rows });
+        // 確保數值正確
+        const projects = rows.map(row => ({
+            ...row,
+            task_count: Number(row.task_count) || 0,
+            completed_tasks: Number(row.completed_tasks) || 0,
+            owner_name: row.owner_name || null
+        }));
+
+        return NextResponse.json({ success: true, data: projects });
     } catch (error) {
         console.error('取得專案錯誤:', error);
         return NextResponse.json({ success: false, error: '取得專案失敗' }, { status: 500 });
@@ -54,7 +70,16 @@ export async function POST(request: NextRequest) {
         const [result] = await pool.query<ResultSetHeader>(
             `INSERT INTO projects (name, description, status, priority, start_date, end_date, budget, owner_id)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [name, description, status || 'planning', priority || 'medium', start_date, end_date, budget, owner_id]
+            [
+                name, 
+                description || null, 
+                status || 'planning', 
+                priority || 'medium', 
+                start_date || null, 
+                end_date || null, 
+                budget || null, 
+                owner_id || null
+            ]
         );
 
         return NextResponse.json({ 

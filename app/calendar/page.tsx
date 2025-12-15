@@ -22,6 +22,7 @@ const VIEW_TO_TIME_UNIT: Record<CalendarView, moment.unitOfTime.DurationConstruc
 
 interface CalendarEventExtended extends Event {
     id: string;
+    title: string;  
     description?: string;
     event_type: string;
     project_id?: string;
@@ -40,6 +41,9 @@ export default function CalendarPage() {
 
     const [currentView, setCurrentView] = useState('month');
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [showEditEventModal, setShowEditEventModal] = useState(false);
+    const [editingEvent, setEditingEvent] = useState<CalendarEventExtended | null>(null);
+
 
     const [filters, setFilters] = useState({
         project_id: '',
@@ -56,38 +60,87 @@ export default function CalendarPage() {
     const [showNewEventModal, setShowNewEventModal] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
 
-    // 取得事件資料
     const fetchEvents = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
-            const viewToUnit: Record<string, moment.unitOfTime.StartOf> = {
-                'month': 'month',
-                'week': 'week', 
-                'day': 'day',
-                'agenda': 'day' 
-              };
-              const unit = viewToUnit[currentView] || 'month';
-    
-              const startDate = moment(currentDate).startOf(unit).format('YYYY-MM-DD');
-              const endDate = moment(currentDate).endOf(unit).format('YYYY-MM-DD');
 
+            // 計算日期範圍
+            let startDate: string;
+            let endDate: string;
+
+            switch (currentView) {
+                case 'month':
+                    startDate = moment(currentDate).startOf('month').format('YYYY-MM-DD');
+                    endDate = moment(currentDate).endOf('month').format('YYYY-MM-DD');
+                    break;
+                case 'week':
+                    startDate = moment(currentDate).startOf('week').format('YYYY-MM-DD');
+                    endDate = moment(currentDate).endOf('week').format('YYYY-MM-DD');
+                    break;
+                case 'day':
+                    startDate = moment(currentDate).format('YYYY-MM-DD');
+                    endDate = moment(currentDate).format('YYYY-MM-DD');
+                    break;
+                case 'agenda':
+                    startDate = moment(currentDate).format('YYYY-MM-DD');
+                    endDate = moment(currentDate).add(30, 'days').format('YYYY-MM-DD');
+                    break;
+                default:
+                    startDate = moment(currentDate).startOf('month').format('YYYY-MM-DD');
+                    endDate = moment(currentDate).endOf('month').format('YYYY-MM-DD');
+            }
+
+            // 建立查詢參數
             const params = new URLSearchParams({
                 start_date: startDate,
-                end_date: endDate,
-                ...(filters.project_id && { project_id: filters.project_id }),
-                ...(filters.event_type && { event_type: filters.event_type })
+                end_date: endDate
             });
 
-            const response = await fetch(`/api/calendar?${params}`);
+            // 添加篩選條件
+            if (filters.project_id) {
+                params.append('project_id', filters.project_id);
+            }
+
+            if (filters.event_type) {
+                params.append('event_type', filters.event_type);
+            }
+
+            // 排除不需要的事件類型
+            const excludeTypes: string[] = [];
+            if (!filters.show_meetings) excludeTypes.push('meeting');
+            if (!filters.show_tasks) excludeTypes.push('task');
+            if (!filters.show_milestones) excludeTypes.push('milestone');
+
+            if (excludeTypes.length > 0) {
+                params.append('exclude_types', excludeTypes.join(','));
+            }
+
+
+
+            const response = await fetch(`/api/calendar?${params.toString()}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP 錯誤: ${response.status}`);
+            }
+
             const data = await response.json();
 
             if (!data.success) {
                 throw new Error(data.error || '取得行事曆事件失敗');
             }
 
-            // 轉換為 react-big-calendar 格式
-            const formattedEvents: CalendarEventExtended[] = data.data.map((event: CalendarEvent) => ({
+            // 前端進一步篩選
+            let filteredEvents = data.data || [];
+
+            // 篩選全天事件
+            if (!filters.show_all_day) {
+                filteredEvents = filteredEvents.filter((event: CalendarEvent) => !event.all_day);
+            }
+
+            // 轉換格式
+            const formattedEvents: CalendarEventExtended[] = filteredEvents.map((event: CalendarEvent) => ({
+
                 id: event.id,
                 title: event.title,
                 start: new Date(event.start_time),
@@ -101,12 +154,12 @@ export default function CalendarPage() {
                 participants: event.participants,
                 all_day: event.all_day
             }));
-
             setEvents(formattedEvents);
 
         } catch (err) {
             console.error('載入行事曆錯誤:', err);
             setError(err instanceof Error ? err.message : '載入失敗');
+
         } finally {
             setLoading(false);
         }
@@ -154,9 +207,14 @@ export default function CalendarPage() {
         };
         return texts[eventType] || eventType;
     };
-
-    const handleSelectEvent = (event: CalendarEventExtended) => {
-        setSelectedEvent(event);
+    const handleEditEvent = (event: CalendarEventExtended) => {
+        setEditingEvent(event);
+        setShowEventModal(false);
+        setShowEditEventModal(true);
+    };
+    const handleSelectEvent = (event: Event) => {
+        const extendedEvent = event as CalendarEventExtended;
+        setSelectedEvent(extendedEvent);
         setShowEventModal(true);
     };
 
@@ -164,14 +222,6 @@ export default function CalendarPage() {
         setSelectedSlot(slotInfo);
         setShowNewEventModal(true);
     };
-
-    const handleViewChange = useCallback((view: string) => {
-        setCurrentView(view);
-    }, []);
-
-    const handleNavigate = useCallback((newDate: Date) => {
-        setCurrentDate(newDate);
-    }, []);
 
     const handleFilterChange = (key: string, value: any) => {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -191,7 +241,62 @@ export default function CalendarPage() {
             show_tasks: true,
             show_milestones: true
         });
+        fetchEvents();
     };
+    const handleUpdateEvent = async (eventData: any) => {
+        if (!editingEvent) {
+            return;
+        }
+    
+        console.log('更新事件資料:', eventData);
+        console.log('事件ID:', editingEvent.id);
+    
+        try {
+            const formattedData = {
+                ...eventData,
+                project_id: eventData.project_id || null, 
+                description: eventData.description || null,
+                location: eventData.location || null,
+                all_day: eventData.all_day || false
+            };
+    
+            console.log('格式化後的資料:', formattedData);
+            const response = await fetch(`/api/calendar/${editingEvent.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...eventData,
+                    all_day: eventData.all_day || false
+                })
+            });
+            console.log('回應狀態:', response.status);
+
+            const data = await response.json();
+            console.log('回應資料:', data);
+
+            if (data.success) {
+                fetchEvents();
+                setShowEditEventModal(false);
+                setEditingEvent(null);
+                alert('事件已更新');
+            } else {
+                alert(data.error || '更新事件失敗');
+            }
+        } catch (err) {
+            console.error('更新事件錯誤:', err);
+            alert('更新事件失敗');
+        }
+    };
+
+    const handleViewChange = useCallback((view: string) => {
+        setCurrentView(view);
+    }, []);
+
+    const handleNavigate = useCallback((newDate: Date) => {
+        setCurrentDate(newDate);
+    }, []);
+
+
 
     const handleCreateEvent = async (eventData: any) => {
         try {
@@ -217,7 +322,8 @@ export default function CalendarPage() {
     };
 
     const handleDeleteEvent = async (eventId: string) => {
-        if (!confirm('確定要刪除這個事件嗎？')) return;
+        const confirmed = window.confirm('確定要刪除這個事件嗎？此操作無法復原。');
+        if (!confirmed) return;
 
         try {
             const response = await fetch(`/api/calendar/${eventId}`, {
@@ -230,6 +336,7 @@ export default function CalendarPage() {
                 fetchEvents();
                 setShowEventModal(false);
                 setSelectedEvent(null);
+                alert('事件已刪除');
             } else {
                 alert(data.error || '刪除事件失敗');
             }
@@ -384,14 +491,107 @@ export default function CalendarPage() {
                         </div>
                     </div>
                 )}
+                {/* 篩選器 */}
+                {filters.showFilters && (
+                    <div className="mb-6 bg-white rounded-2xl shadow-xl p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">篩選條件</h3>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            {/* 專案篩選 */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    專案
+                                </label>
+                                <select
+                                    value={filters.project_id}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, project_id: e.target.value }))}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                                >
+                                    <option value="">所有專案</option>
+                                    {projects.map((project) => (
+                                        <option key={project.id} value={project.id}>
+                                            {project.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* 事件類型篩選 */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    事件類型
+                                </label>
+                                <select
+                                    value={filters.event_type}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, event_type: e.target.value }))}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                                >
+                                    <option value="">所有類型</option>
+                                    <option value="meeting">會議</option>
+                                    <option value="task">任務</option>
+                                    <option value="milestone">里程碑</option>
+                                    <option value="reminder">提醒</option>
+                                    <option value="holiday">假日</option>
+                                    <option value="custom">自訂</option>
+                                </select>
+                            </div>
+
+                            {/* 其他篩選選項 */}
+                            <div className="flex flex-col justify-end">
+                                <div className="space-y-2">
+                                    <label className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={filters.show_all_day}
+                                            onChange={(e) => setFilters(prev => ({ ...prev, show_all_day: e.target.checked }))}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                                        />
+                                        <span className="text-sm text-gray-700">顯示全天事件</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 篩選操作按鈕 */}
+                        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                            <button
+                                onClick={() => {
+                                    setFilters({
+                                        project_id: '',
+                                        event_type: '',
+                                        show_all_day: true,
+                                        showFilters: false,
+                                        show_meetings: true,
+                                        show_tasks: true,
+                                        show_milestones: true
+                                    });
+                                    fetchEvents(); // 重置後重新載入
+                                }}
+                                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                重設篩選
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setFilters(prev => ({ ...prev, showFilters: false }));
+                                    fetchEvents(); // 套用篩選後重新載入
+                                }}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                套用篩選
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <div>
                     <CalendarWrapper
-                        events={[]}
+                        events={events}
                         view={currentView}
                         onViewChange={handleViewChange}
                         date={currentDate}
                         onNavigate={handleNavigate}
+                        onSelectEvent={handleSelectEvent}
+                        onSelectSlot={handleSelectSlot}
                     />
                 </div>
 
@@ -418,7 +618,6 @@ export default function CalendarPage() {
                     </div>
                 </div>
 
-                {/* 事件詳細資訊 Modal */}
                 {showEventModal && selectedEvent && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -510,6 +709,12 @@ export default function CalendarPage() {
 
                             <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
                                 <button
+                                    onClick={() => handleEditEvent(selectedEvent)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    編輯
+                                </button>
+                                <button
                                     onClick={() => handleDeleteEvent(selectedEvent.id)}
                                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                                 >
@@ -544,13 +749,13 @@ export default function CalendarPage() {
                                 e.preventDefault();
                                 const formData = new FormData(e.currentTarget);
                                 const eventData = {
-                                    title: formData.get('title'),
-                                    description: formData.get('description'),
-                                    start_time: formData.get('start_time'),
-                                    end_time: formData.get('end_time'),
-                                    event_type: formData.get('event_type'),
-                                    project_id: formData.get('project_id'),
-                                    location: formData.get('location')
+                                    title: formData.get('title') as string,
+                                    description: formData.get('description') as string,
+                                    start_time: formData.get('start_time') as string,
+                                    end_time: formData.get('end_time') as string,
+                                    event_type: formData.get('event_type') as string,
+                                    project_id: (formData.get('project_id') as string) || null, 
+                                    location: formData.get('location') as string
                                 };
                                 handleCreateEvent(eventData);
                             }}>
@@ -672,6 +877,193 @@ export default function CalendarPage() {
                         </div>
                     </div>
                 )}
+
+{showEditEventModal && editingEvent && (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-bold text-gray-900">編輯事件</h3>
+                <button
+                    onClick={() => {
+                        setShowEditEventModal(false);
+                        setEditingEvent(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                    ✕
+                </button>
+            </div>
+
+            {/* 關鍵：添加額外的檢查 */}
+            {editingEvent ? (
+                <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const eventData = {
+                        title: formData.get('title') as string,
+                        description: formData.get('description') as string,
+                        start_time: formData.get('start_time') as string,
+                        end_time: formData.get('end_time') as string,
+                        event_type: formData.get('event_type') as string,
+                        project_id: formData.get('project_id') as string,
+                        location: formData.get('location') as string,
+                        all_day: formData.get('all_day') === 'on'
+                    };
+                    handleUpdateEvent(eventData);
+                }}>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                事件標題 *
+                            </label>
+                            <input
+                                type="text"
+                                name="title"
+                                defaultValue={editingEvent.title || ''}
+                                required
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                描述
+                            </label>
+                            <textarea
+                                name="description"
+                                defaultValue={editingEvent.description || ''}
+                                rows={3}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                            />
+                        </div>
+
+                        {/* 全天事件選項 */}
+                        <div>
+                            <label className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    name="all_day"
+                                    defaultChecked={editingEvent.all_day}
+                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                                />
+                                <span className="text-sm text-gray-700">全天事件</span>
+                            </label>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    開始時間 *
+                                </label>
+                                <input
+                                    type={editingEvent.all_day ? "date" : "datetime-local"}
+                                    name="start_time"
+                                    required
+                                    defaultValue={
+                                        editingEvent.all_day
+                                            ? moment(editingEvent.start).format('YYYY-MM-DD')
+                                            : moment(editingEvent.start).format('YYYY-MM-DDTHH:mm')
+                                    }
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    結束時間 *
+                                </label>
+                                <input
+                                    type={editingEvent.all_day ? "date" : "datetime-local"}
+                                    name="end_time"
+                                    required
+                                    defaultValue={
+                                        editingEvent.all_day
+                                            ? moment(editingEvent.end).format('YYYY-MM-DD')
+                                            : moment(editingEvent.end).format('YYYY-MM-DDTHH:mm')
+                                    }
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                事件類型 *
+                            </label>
+                            <select
+                                name="event_type"
+                                defaultValue={editingEvent.event_type}
+                                required
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                            >
+                                <option value="meeting">會議</option>
+                                <option value="task">任務</option>
+                                <option value="milestone">里程碑</option>
+                                <option value="reminder">提醒</option>
+                                <option value="holiday">假日</option>
+                                <option value="custom">自訂</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                關聯專案
+                            </label>
+                            <select
+                                name="project_id"
+                                defaultValue={editingEvent.project_id || ''}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                            >
+                                <option value="">選擇專案</option>
+                                {projects.map((project) => (
+                                    <option key={project.id} value={project.id}>
+                                        {project.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                地點
+                            </label>
+                            <input
+                                type="text"
+                                name="location"
+                                defaultValue={editingEvent.location || ''}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setShowEditEventModal(false);
+                                setEditingEvent(null);
+                                setShowEventModal(true);
+                            }}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            取消
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            更新事件
+                        </button>
+                    </div>
+                </form>
+            ) : (
+                <div className="text-center p-8">
+                    <p className="text-gray-500">事件資料載入中...</p>
+                </div>
+            )}
+        </div>
+    </div>
+)}
             </div>
         </div>
     );

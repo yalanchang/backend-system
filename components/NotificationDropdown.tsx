@@ -38,7 +38,12 @@ export default function NotificationDropdown() {
 
     const fetchNotifications = async () => {
         try {
-            const res = await fetch('/api/notifications');
+            const token = localStorage.getItem('token'); 
+            const res = await fetch('/api/notifications', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const data = await res.json();
             if (data.success) {
                 setNotifications(data.data);
@@ -51,11 +56,15 @@ export default function NotificationDropdown() {
 
     const markAsRead = async (id?: number) => {
         try {
-            await fetch('/api/notifications', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(id ? { id } : { markAll: true }),
-            });
+            const token = localStorage.getItem('token');
+        await fetch('/api/notifications', {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(id ? { id } : { markAll: true }),
+        });
             fetchNotifications();
         } catch (error) {
             console.error('標記已讀失敗:', error);
@@ -90,7 +99,13 @@ export default function NotificationDropdown() {
     return (
         <div className="relative" ref={dropdownRef}>
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                    console.log('點擊通知按鈕，目前未讀:', unreadCount);
+                    setIsOpen(!isOpen);
+                    if (!isOpen) {
+                        fetchNotifications(); 
+                    }
+                }}
                 className="relative p-2 text-gray-400 hover:text-white transition-colors"
             >
                 <span className="text-xl">🔔</span>

@@ -3,7 +3,7 @@ export interface Project {
     id: string;
     name: string;
     description: string;
-    status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+    status: 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
     priority: 'low' | 'medium' | 'high';
     start_date: string;
     end_date: string;

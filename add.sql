@@ -281,3 +281,33 @@ CREATE TABLE calendar_events (
 INSERT INTO calendar_events (id, title, start_time, end_time, event_type, created_by) VALUES
 (UUID(), '測試會議', '2024-01-15 09:00:00', '2024-01-15 10:00:00', 'meeting', 'user-001'),
 (UUID(), '專案審核', '2024-01-16 14:00:00', '2024-01-16 15:30:00', 'meeting', 'user-002');
+
+-- 插入測試通知資料
+INSERT INTO notifications (user_id, type, title, content, link, is_read, created_at) VALUES
+(1, 'task_assigned', '新任務指派', '您被指派了一個新任務：網站首頁設計', '/tasks/123', FALSE, '2024-12-15 09:30:00'),
+(1, 'task_comment', '任務有新留言', '李大明在「會員系統開發」任務中留言', '/tasks/456', FALSE, '2024-12-15 10:15:00'),
+(1, 'task_due', '任務即將到期', '「專案報告撰寫」任務將於明天到期', '/tasks/789', FALSE, '2024-12-15 11:00:00'),
+(1, 'project_invite', '專案邀請', '您被邀請加入「電商平台開發」專案', '/projects/101', FALSE, '2024-12-15 12:00:00'),
+(1, 'mention', '您被提及', '張經理在專案討論中提到您', '/discussions/55', FALSE, '2024-12-15 13:20:00'),
+(1, 'task_assigned', '週報撰寫任務', '請於每週五前提交專案週報', '/tasks/202', TRUE, '2024-12-14 15:20:00'),
+(1, 'task_comment', '設計稿確認', '王設計師在「UI設計審核」中回覆', '/tasks/303', TRUE, '2024-12-14 16:45:00'),
+(1, 'project_invite', '團隊專案邀請', '您被邀請加入「內部工具開發」團隊', '/projects/202', TRUE, '2024-12-13 10:00:00'),
+(1, 'mention', '會議記錄提及', '您在上週會議中的建議已被採納', '/meetings/88', TRUE, '2024-12-13 14:30:00'),
+(1, 'task_due', '請假申請核准', '您的請假申請已核准', '/hr/leave/56', TRUE, '2024-12-12 08:45:00'),
+(1, 'task_assigned', '客戶需求分析', '請分析新客戶的技術需求', '/tasks/404', FALSE, '2024-12-15 14:00:00'),
+(1, 'task_comment', '程式碼審查意見', '您的程式碼提交有審查意見', '/code-reviews/77', FALSE, '2024-12-15 15:30:00'),
+(1, 'project_invite', '跨部門專案合作', '邀請參與跨部門流程改善專案', '/projects/303', FALSE, '2024-12-15 16:00:00'),
+(1, 'mention', '績效考核通知', '您的年度績效考核即將開始', '/performance/99', TRUE, '2024-12-14 09:00:00'),
+(1, 'task_due', '培訓課程提醒', '明日有技術培訓課程', '/trainings/44', FALSE, '2024-12-15 17:00:00');
+
+
+
+
+-- 檢查 users 表是否有這些欄位，沒有就新增
+ALTER TABLE users ADD COLUMN IF NOT EXISTS provider VARCHAR(50) DEFAULT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS provider_id VARCHAR(255) DEFAULT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(500) DEFAULT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+
+ALTER TABLE users MODIFY COLUMN password VARCHAR(255) DEFAULT NULL;

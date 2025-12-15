@@ -137,7 +137,6 @@ export default function TasksPage() {
                 </select>
             </div>
 
-            {/* 看板視圖 */}
             {loading ? (
                 <div>載入中...</div>
             ) : (
