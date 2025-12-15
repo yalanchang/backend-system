@@ -174,3 +174,110 @@ INSERT INTO tags (name, color) VALUES
 INSERT INTO project_members (id, project_id, user_id, role) VALUES
 (1, 2, 2, 'owner')
 
+-- 建立活動紀錄表
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  action VARCHAR(50) NOT NULL COMMENT '操作類型',
+  description TEXT NOT NULL COMMENT '操作描述',
+  entity_type VARCHAR(50) NOT NULL COMMENT '實體類型: project, task, user',
+  entity_id VARCHAR(36) NOT NULL COMMENT '實體ID',
+  user_id VARCHAR(36) NOT NULL COMMENT '操作者ID',
+  user_name VARCHAR(100) COMMENT '操作者姓名',
+  ip_address VARCHAR(45) COMMENT 'IP地址',
+  user_agent TEXT COMMENT '瀏覽器資訊',
+  old_values JSON COMMENT '修改前的值',
+  new_values JSON COMMENT '修改後的值',
+  metadata JSON COMMENT '額外資訊',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_entity (entity_type, entity_id),
+  INDEX idx_user (user_id),
+  INDEX idx_created_at (created_at)
+);
+
+DROP TABLE activity_logs;
+-- 插入測試資料
+INSERT INTO activity_logs (id, action, description, entity_type, entity_id, user_id, user_name, old_values, new_values) VALUES
+('act-001', 'create', '建立新的專案「網站改版專案」', 'project', '1', 'user-001', '張三', NULL, '{"name": "網站改版專案", "status": "pending"}'),
+('act-002', 'update', '更新專案狀態為進行中', 'project', '1', 'user-001', '張三', '{"status": "pending"}', '{"status": "in_progress"}'),
+('act-003', 'create', '建立新任務「設計首頁」', 'task', 'task-001', 'user-002', '李四', NULL, '{"title": "設計首頁", "status": "todo"}'),
+('act-004', 'delete', '刪除使用者「測試帳號」', 'user', 'user-999', 'user-001', '張三', '{"name": "測試帳號", "email": "test@example.com"}', NULL),
+('act-005', 'login', '使用者登入系統', 'user', 'user-002', 'user-002', '李四', NULL, '{"login_time": "2024-01-15T10:30:00Z"}');
+
+  -- 建立行事曆事件表
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id VARCHAR(36) PRIMARY KEY,
+  title VARCHAR(200) NOT NULL COMMENT '事件標題',
+  description TEXT COMMENT '事件描述',
+  start_time DATETIME NOT NULL COMMENT '開始時間',
+  end_time DATETIME NOT NULL COMMENT '結束時間',
+  all_day BOOLEAN DEFAULT FALSE COMMENT '是否全天事件',
+  event_type ENUM('meeting', 'task', 'milestone', 'reminder', 'holiday', 'custom') DEFAULT 'custom',
+  entity_type ENUM('project', 'task', 'user', 'none') DEFAULT 'none',
+  entity_id VARCHAR(36) COMMENT '關聯實體ID',
+  project_id VARCHAR(36) COMMENT '關聯專案ID',
+  location VARCHAR(500) COMMENT '地點',
+  color VARCHAR(7) COMMENT '顏色代碼',
+  recurrence_rule TEXT COMMENT '重複規則',
+  created_by VARCHAR(36) NOT NULL COMMENT '建立者',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  INDEX idx_time_range (start_time, end_time),
+  INDEX idx_entity (entity_type, entity_id),
+  INDEX idx_project (project_id),
+  INDEX idx_created_by (created_by)
+);
+
+-- 建立事件參與者表
+CREATE TABLE IF NOT EXISTS event_participants (
+  id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  event_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  status ENUM('pending', 'accepted', 'declined', 'tentative') DEFAULT 'pending',
+  response_note TEXT COMMENT '回覆備註',
+  responded_at TIMESTAMP NULL,
+  FOREIGN KEY (event_id) REFERENCES calendar_events(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_participation (event_id, user_id),
+  INDEX idx_event (event_id),
+  INDEX idx_user (user_id)
+);
+
+-- 插入測試資料
+INSERT INTO calendar_events (id, title, description, start_time, end_time, event_type, project_id, color, created_by) VALUES
+('event-001', '專案啟動會議', '網站改版專案啟動會議', '2024-01-15 09:00:00', '2024-01-15 11:00:00', 'meeting', '1', '#3B82F6', 'user-001'),
+('event-002', '設計稿審核', '首頁設計稿審核會議', '2024-01-18 14:00:00', '2024-01-18 16:00:00', 'meeting', '1', '#8B5CF6', 'user-002'),
+('event-003', '開發階段開始', '開始進行網站開發', '2024-01-20 00:00:00', '2024-01-20 23:59:59', 'milestone', '1', '#10B981', 'user-001'),
+('event-004', '測試階段', '進行系統測試', '2024-03-01 00:00:00', '2024-03-07 23:59:59', 'task', '1', '#F59E0B', 'user-003'),
+('event-005', '團隊聚餐', '團隊季度聚餐', '2024-01-25 18:00:00', '2024-01-25 20:00:00', 'custom', NULL, '#EC4899', 'user-001');
+
+INSERT INTO event_participants (event_id, user_id, status) VALUES
+('event-001', 'user-001', 'accepted'),
+('event-001', 'user-002', 'accepted'),
+('event-001', 'user-003', 'pending'),
+('event-002', 'user-002', 'accepted'),
+('event-002', 'user-001', 'pending');
+
+-- 簡單版本，沒有外鍵約束
+DROP TABLE IF EXISTS calendar_events;
+
+CREATE TABLE calendar_events (
+  id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  start_time DATETIME NOT NULL,
+  end_time DATETIME NOT NULL,
+  all_day BOOLEAN DEFAULT FALSE,
+  event_type VARCHAR(50) NOT NULL DEFAULT 'custom',
+  project_id VARCHAR(36),
+  location VARCHAR(500),
+  color VARCHAR(7),
+  created_by VARCHAR(36) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 插入測試資料
+INSERT INTO calendar_events (id, title, start_time, end_time, event_type, created_by) VALUES
+(UUID(), '測試會議', '2024-01-15 09:00:00', '2024-01-15 10:00:00', 'meeting', 'user-001'),
+(UUID(), '專案審核', '2024-01-16 14:00:00', '2024-01-16 15:30:00', 'meeting', 'user-002');
