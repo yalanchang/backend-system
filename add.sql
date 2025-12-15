@@ -170,3 +170,7 @@ INSERT INTO tags (name, color) VALUES
 ('Enhancement', '#3B82F6'),
 ('Documentation', '#8B5CF6'),
 ('Urgent', '#F97316');
+
+INSERT INTO project_members (id, project_id, user_id, role) VALUES
+(1, 2, 2, 'owner')
+

@@ -97,7 +97,6 @@ export default function UsersPage() {
                 </select>
             </div>
 
-            {/* 統計卡片 */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <StatCard 
                     title="總使用者" 
@@ -197,7 +196,6 @@ export default function UsersPage() {
                 </div>
             )}
 
-            {/* Modal */}
             {showModal && (
                 <UserModal
                     user={editingUser}
