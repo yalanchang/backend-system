@@ -1,3 +1,4 @@
+'use client';
 
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
