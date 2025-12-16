@@ -8,7 +8,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="zh-TW">
-            <body>
+            <body className="m-full">
                 <Providers>{children}</Providers>
             </body>
         </html>

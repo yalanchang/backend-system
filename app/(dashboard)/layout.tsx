@@ -13,7 +13,7 @@ export default function DashboardLayout({
 
     return (
         <SessionProvider>
-            <div className="flex min-h-screen bg-gray-100 text-gray-900">
+            <div className="flex min-h-screen bg-gray-100 text-gray-900 ">
                 {sidebarOpen && (
                     <div
                         className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -29,7 +29,7 @@ export default function DashboardLayout({
                     <Sidebar onClose={() => setSidebarOpen(false)} />
                 </div>
 
-                <div className="flex-1 flex flex-col min-h-screen lg:ml-0">
+                <div className="flex-1 flex flex-col overflow-auto ">
                     <header className="lg:hidden bg-white shadow-sm px-4 py-3 flex items-center justify-between">
                         <button
                             onClick={() => setSidebarOpen(true)}
