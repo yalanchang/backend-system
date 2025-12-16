@@ -1,51 +1,51 @@
 import mysql from 'mysql2/promise';
 
+function getDbConfig() {
+    if (process.env.DATABASE_URL) {
+        try {
+            const parsed = new URL(process.env.DATABASE_URL);
+            return {
+                host: parsed.hostname,
+                port: parsed.port ? parseInt(parsed.port) : 3306,  
+                user: parsed.username,
+                password: parsed.password,
+                database: parsed.pathname.replace(/^\//, ''),
+                ssl: { rejectUnauthorized: false }
+            };
+        } catch (error) {
+            console.error('解析 DATABASE_URL 失败:', error);
+        }
+    }
+    
+    // 开发环境
+    return {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306'),  
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'project_management',
+        ssl: process.env.NODE_ENV === 'production' 
+            ? { rejectUnauthorized: false } 
+            : undefined
+    };
+}
+
+const dbConfig = getDbConfig();
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'project_management',
+    // 基础连接配置
+    host: dbConfig.host,
+    port: dbConfig.port,
+    user: dbConfig.user,
+    password: dbConfig.password,
+    database: dbConfig.database,
+    ssl: dbConfig.ssl,
+    
     waitForConnections: true,
     connectionLimit: 10,
+    queueLimit: 0,
+    connectTimeout: 10000,
+    idleTimeout: 60000,
+    charset: 'utf8mb4',
 });
 
-export default pool;export interface User {
-    id: number;
-    name: string;
-    email: string;
-    role: 'admin' | 'manager' | 'member';
-    avatar?: string;
-    created_at: string;
-}
-
-export interface Project {
-    id: number;
-    name: string;
-    description?: string;
-    status: 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
-    priority: 'low' | 'medium' | 'high' | 'urgent';
-    start_date?: string;
-    end_date?: string;
-    budget?: number;
-    owner_id?: number;
-    owner_name?: string;
-    task_count?: number;
-    completed_tasks?: number;
-    created_at: string;
-}
-
-export interface Task {
-    id: number;
-    project_id: number;
-    project_name?: string;
-    title: string;
-    description?: string;
-    status: 'todo' | 'in_progress' | 'review' | 'done';
-    priority: 'low' | 'medium' | 'high' | 'urgent';
-    assignee_id?: number;
-    assignee_name?: string;
-    due_date?: string;
-    estimated_hours?: number;
-    actual_hours?: number;
-    created_at: string;
-}
+export default pool;
