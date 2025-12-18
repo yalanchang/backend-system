@@ -23,7 +23,6 @@ export default function ActivityContent() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
   const [filters, setFilters] = useState({
     entity_type: searchParams.get('entity_type') || '',
     action: searchParams.get('action') || '',
@@ -58,7 +57,6 @@ export default function ActivityContent() {
     try {
       setLoading(true);
       setError(null);
-      
       const queryString = buildQueryString();
       const response = await fetch(`/api/activity?${queryString}`);
       const data = await response.json();

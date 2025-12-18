@@ -27,7 +27,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     };
 
     return (
-        <aside className="w-64 bg-gray-900 text-white min-h-screen p-4 flex flex-col">
+        <aside className="w-64 bg-gray-900 text-white min-h-screen p-4 flex flex-col pb-safe ">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-xl font-bold">專案管理</h1>
                 <button

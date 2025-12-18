@@ -3,7 +3,6 @@ import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { CalendarEvent } from '@/lib/types';
 
-// GET - 取得單一事件
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

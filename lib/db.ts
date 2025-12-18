@@ -16,7 +16,6 @@ function getDbConfig() {
             console.error('解析 DATABASE_URL 失败:', error);
         }
     }
-    
     // 开发环境
     return {
         host: process.env.DB_HOST || 'localhost',
@@ -32,7 +31,6 @@ function getDbConfig() {
 
 const dbConfig = getDbConfig();
 const pool = mysql.createPool({
-    // 基础连接配置
     host: dbConfig.host,
     port: dbConfig.port,
     user: dbConfig.user,

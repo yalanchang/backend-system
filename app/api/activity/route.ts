@@ -3,16 +3,12 @@ import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 import { ActivityLog, PaginatedResponse, ApiResponse } from '@/lib/types';
 
-// GET - 取得活動紀錄列表
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    
-    // 取得查詢參數
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
-    
     const entityType = searchParams.get('entity_type');
     const entityId = searchParams.get('entity_id');
     const userId = searchParams.get('user_id');
@@ -21,7 +17,6 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('end_date');
     const search = searchParams.get('search');
     
-    // 建立查詢條件
     const conditions: string[] = [];
     const params: any[] = [];
     
@@ -64,7 +59,6 @@ export async function GET(request: NextRequest) {
       ? `WHERE ${conditions.join(' AND ')}` 
       : '';
     
-    // 取得總數
     const [countRows] = await pool.query<RowDataPacket[]>(
       `SELECT COUNT(*) as total FROM activity_logs ${whereClause}`,
       params
@@ -87,7 +81,6 @@ export async function GET(request: NextRequest) {
       [...params, limit, offset]
     );
     
-    // 格式化資料
     const activities = rows.map(row => ({
       ...row,
       old_values: row.old_values ? JSON.parse(row.old_values) : null,
@@ -121,7 +114,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - 建立新的活動紀錄（系統內部使用）
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
