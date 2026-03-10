@@ -58,10 +58,10 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold mb-8 text-gray-900">儀表板</h1>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <StatCard title="專案總數" value={stats.projects.total} icon="📁" color="blue" />
-                <StatCard title="進行中專案" value={stats.projects.in_progress} icon="🚀" color="yellow" />
-                <StatCard title="待處理任務" value={stats.tasks.todo} icon="📝" color="red" />
-                <StatCard title="已完成任務" value={stats.tasks.done} icon="✅" color="green" />
+                <StatCard title="專案總數" value={stats.projects.total}  color="blue" />
+                <StatCard title="進行中專案" value={stats.projects.in_progress}color="yellow" />
+                <StatCard title="待處理任務" value={stats.tasks.todo} color="red" />
+                <StatCard title="已完成任務" value={stats.tasks.done} color="green" />
             </div>
 
             <div className="bg-white rounded-xl p-6 shadow-sm">
@@ -86,7 +86,7 @@ export default function DashboardPage() {
     );
 }
 
-function StatCard({ title, value, icon, color }: { title: string; value: number; icon: string; color: string }) {
+function StatCard({ title, value,  color }: { title: string; value: number; color: string }) {
     const colorClasses: Record<string, string> = {
         blue: 'bg-blue-100 text-blue-600',
         yellow: 'bg-yellow-100 text-yellow-600',
@@ -97,9 +97,7 @@ function StatCard({ title, value, icon, color }: { title: string; value: number;
     return (
         <div className="bg-white rounded-xl p-6 shadow-sm">
             <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl ${colorClasses[color]}`}>
-                    {icon}
-                </div>
+               
                 <div>
                     <p className="text-gray-500 text-sm">{title}</p>
                     <p className="text-2xl font-bold text-gray-900">{value}</p>

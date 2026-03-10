@@ -9,13 +9,13 @@ interface SidebarProps {
 }
 
 const menuItems = [
-    { href: '/', label: '儀表板', icon: '📊' },
-    { href: '/projects', label: '專案管理', icon: '📁' },
-    { href: '/tasks', label: '任務管理', icon: '✅' },
-    { href: '/users', label: '使用者管理', icon: '👥' },
-    { href: '/calendar', label: '行事曆', icon: '📅' },
-    { href: '/reports', label: '報表統計', icon: '📈' },
-    { href: '/activity', label: '活動日誌', icon: '📋' },
+    { href: '/', label: '儀表板'},
+    { href: '/projects', label: '專案管理'},
+    { href: '/tasks', label: '任務管理'},
+    { href: '/users', label: '使用者管理' },
+    { href: '/calendar', label: '行事曆'},
+    { href: '/reports', label: '報表統計'},
+    { href: '/activity', label: '活動日誌' },
 ];
 
 export default function Sidebar({ onClose }: SidebarProps) {
@@ -52,7 +52,6 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                     : 'text-gray-300 hover:bg-gray-800'
                             }`}
                         >
-                            <span>{item.icon}</span>
                             <span>{item.label}</span>
                         </Link>
                     );
