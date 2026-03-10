@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { logActivity } from '@/lib/activity-server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 // 取得任務
 export async function GET(request: NextRequest) {
@@ -53,6 +56,7 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const { project_id, title, description, status, priority, assignee_id, due_date, estimated_hours } = body;
+        const session = await getServerSession(authOptions);
 
         if (!project_id || !title) {
             return NextResponse.json({ success: false, error: '專案和任務標題必填' }, { status: 400 });
@@ -63,6 +67,25 @@ export async function POST(request: NextRequest) {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [project_id, title, description, status || 'todo', priority || 'medium', assignee_id || null, due_date || null, estimated_hours || null]
         );
+
+        await logActivity({
+            action: 'create',
+            description: `建立新任務「${title}」`,
+            entity_type: 'task',
+            entity_id: String(result.insertId),
+            user_id: (session?.user as any)?.id || 'unknown',
+            user_name: session?.user?.name || undefined,
+            new_values: {
+                project_id: project_id ? Number(project_id) : null,
+                title,
+                description: description || null,
+                status: status || 'todo',
+                priority: priority || 'medium',
+                assignee_id: assignee_id ? Number(assignee_id) : null,
+                due_date: due_date || null,
+                estimated_hours: estimated_hours ? Number(estimated_hours) : null,
+            },
+        });
 
         return NextResponse.json({
             success: true,

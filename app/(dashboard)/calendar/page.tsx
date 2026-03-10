@@ -7,19 +7,14 @@ import CalendarWrapper from '@/components/CalendarWrapper';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { CalendarEvent, Project } from '@/lib/types';
-import { FiPlus, FiFilter, FiCalendar, FiUsers, FiBriefcase, FiMapPin, FiClock } from 'react-icons/fi';
+import { FiPlus, FiFilter, FiCalendar, FiUsers, FiBriefcase, FiMapPin } from 'react-icons/fi';
 
 const localizer = momentLocalizer(moment);
 
 const VIEWS: View[] = ['month', 'week', 'day', 'agenda'];
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
 
-const VIEW_TO_TIME_UNIT: Record<CalendarView, moment.unitOfTime.DurationConstructor> = {
-    'month': 'months',
-    'week': 'weeks',
-    'day': 'days',
-    'agenda': 'days'
-};
+
 
 interface CalendarEventExtended extends Event {
     id: string;
@@ -66,7 +61,6 @@ export default function CalendarPage() {
             setLoading(true);
             setError(null);
 
-            // 計算日期範圍
             let startDate: string;
             let endDate: string;
 
@@ -224,26 +218,7 @@ export default function CalendarPage() {
         setShowNewEventModal(true);
     };
 
-    const handleFilterChange = (key: string, value: any) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
-    };
-
-    const handleApplyFilters = () => {
-        fetchEvents();
-    };
-
-    const handleResetFilters = () => {
-        setFilters({
-            project_id: '',
-            event_type: '',
-            show_all_day: true,
-            show_meetings: true,
-            showFilters: false,
-            show_tasks: true,
-            show_milestones: true
-        });
-        fetchEvents();
-    };
+ 
     const handleUpdateEvent = async (eventData: any) => {
         if (!editingEvent) {
             return;
@@ -784,8 +759,8 @@ export default function CalendarPage() {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
+                                    <div className="space-y-4">
+                                    <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 開始時間 *
                                             </label>
@@ -951,8 +926,8 @@ export default function CalendarPage() {
                             </label>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
+                        <div className="space-y-4">
+                        <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     開始時間 *
                                 </label>

@@ -4,16 +4,12 @@
  * @param decimals 小數位數（預設0）
  * @returns 格式化後的字串
  */
-export const formatCurrency = (amount: number, decimals: number = 0): string => {
-    if (amount === null || amount === undefined || isNaN(amount)) {
-      return '$0';
-    }
-    
-    return '$' + amount.toLocaleString('zh-TW', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
-    });
-  };
+export const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('zh-TW', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
   
   /**
    * 格式化日期

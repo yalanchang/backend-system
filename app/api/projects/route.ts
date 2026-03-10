@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { logActivity } from '@/lib/activity-server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
     try {
@@ -42,7 +45,6 @@ export async function GET(request: NextRequest) {
 
         const [rows] = await pool.query<RowDataPacket[]>(query, params);
 
-        // 確保數值正確
         const projects = rows.map(row => ({
             ...row,
             task_count: Number(row.task_count) || 0,
@@ -61,6 +63,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
+        const session = await getServerSession(authOptions);
         const { name, description, status, priority, start_date, end_date, budget, owner_id } = body;
 
         if (!name) {
@@ -70,20 +73,22 @@ export async function POST(request: NextRequest) {
         const [result] = await pool.query<ResultSetHeader>(
             `INSERT INTO projects (name, description, status, priority, start_date, end_date, budget, owner_id)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                name, 
-                description || null, 
-                status || 'planning', 
-                priority || 'medium', 
-                start_date || null, 
-                end_date || null, 
-                budget || null, 
-                owner_id || null
-            ]
+            [name, description || null, status || 'planning', priority || 'medium',
+             start_date || null, end_date || null, budget || null, owner_id || null]
         );
 
-        return NextResponse.json({ 
-            success: true, 
+        await logActivity({
+            action: 'create',
+            description: `建立新專案「${name}」`,
+            entity_type: 'project',
+            entity_id: String(result.insertId),
+            user_id: (session?.user as any)?.id || 'unknown',
+            user_name: session?.user?.name || undefined,
+            new_values: body,
+        });
+
+        return NextResponse.json({
+            success: true,
             data: { id: result.insertId },
             message: '專案建立成功'
         });

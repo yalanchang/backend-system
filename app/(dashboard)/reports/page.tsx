@@ -134,13 +134,12 @@ export default function ReportsPage() {
 
             {/* 統計卡片 */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <StatCard title="總專案數" value={data.projectStats.total} icon="📁" color="blue" />
-                <StatCard title="總任務數" value={data.taskStats.total} icon="✅" color="green" />
-                <StatCard title="總使用者" value={data.userStats.total} icon="👥" color="purple" />
+                <StatCard title="總專案數" value={data.projectStats.total} color="blue" />
+                <StatCard title="總任務數" value={data.taskStats.total}  color="green" />
+                <StatCard title="總使用者" value={data.userStats.total} color="purple" />
                 <StatCard 
                     title="完成率" 
                     value={`${calculateCompletionRate(data.taskStats.by_status)}%`} 
-                    icon="📊" 
                     color="orange" 
                 />
             </div>
@@ -215,7 +214,7 @@ export default function ReportsPage() {
     );
 }
 
-function StatCard({ title, value, icon, color }: { title: string; value: number | string; icon: string; color: string }) {
+function StatCard({ title, value,  color }: { title: string; value: number | string; color: string }) {
     const colorClasses: Record<string, string> = {
         blue: 'bg-blue-100 text-blue-600',
         green: 'bg-green-100 text-green-600',
@@ -225,15 +224,11 @@ function StatCard({ title, value, icon, color }: { title: string; value: number 
 
     return (
         <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl ${colorClasses[color]}`}>
-                    {icon}
-                </div>
-                <div>
-                    <p className="text-gray-500 text-sm">{title}</p>
+           
+           <div className=" items-center">
+           <p className="text-gray-500 text-sm">{title}</p>
                     <p className="text-2xl font-bold text-gray-800">{value}</p>
                 </div>
-            </div>
         </div>
     );
 }

@@ -102,8 +102,8 @@ export default function ProjectEditPage() {
         priority: project.priority || 'medium',
         start_date: project.start_date ? new Date(project.start_date).toISOString().split('T')[0] : '',
         end_date: project.end_date ? new Date(project.end_date).toISOString().split('T')[0] : '',
-        budget: project.budget || 0,
-        owner_id: project.owner_id || ''
+        budget: project.budget ? Math.round(Number(project.budget)) : 0,
+        owner_id: project.owner_id ? String(project.owner_id) : ''
       });
 
     } catch (err) {
@@ -237,7 +237,6 @@ export default function ProjectEditPage() {
             <FiArrowLeft className="mr-2" /> 返回專案詳情
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">編輯專案</h1>
-          <p className="text-gray-600 mt-2">編輯專案 ID: {projectId} 的資訊</p>
         </div>
 
         {/* 成功訊息 */}

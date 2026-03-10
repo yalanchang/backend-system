@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';import 
+{ logActivity } from '@/lib/activity-server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
     try {
@@ -56,17 +59,27 @@ export async function POST(request: NextRequest) {
 
         // 加密密碼
         const hashedPassword = await bcrypt.hash(password, 10);
-
+        const session = await getServerSession(authOptions);
         const [result] = await pool.query<ResultSetHeader>(
             'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
             [name, email, hashedPassword, role || 'member']
         );
+        await logActivity({
+            action: 'create',
+            description: `建立新使用者「${name}」`,
+            entity_type: 'user',
+            entity_id: String(result.insertId),
+            user_id: (session?.user as any)?.id || 'unknown',
+            user_name: session?.user?.name || undefined,
+            new_values: { name, email, role: role || 'member' },
+        });
 
         return NextResponse.json({
             success: true,
             data: { id: result.insertId },
             message: '使用者建立成功'
         });
+        
     } catch (error) {
         console.error('建立使用者錯誤:', error);
         return NextResponse.json({ success: false, error: '建立使用者失敗' }, { status: 500 });

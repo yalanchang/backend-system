@@ -3,6 +3,7 @@ import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-server';
 
 // 取得任務評論
 export async function GET(
@@ -53,11 +54,15 @@ export async function POST(
         );
 
         // 記錄活動
-        await pool.query(
-            `INSERT INTO activity_logs (user_id, action, entity_type, entity_id, description)
-             VALUES (?, 'comment', 'task', ?, ?)`,
-            [(session.user as any).id, id, `新增了評論`]
-        );
+        await logActivity({
+            action: 'comment',
+            description: `在任務中新增了評論`,
+            entity_type: 'task',
+            entity_id: id,
+            user_id: (session.user as any).id,
+            user_name: session.user.name || undefined,
+            new_values: { content },
+        });
 
         // 取得任務資訊，發送通知給負責人
         const [tasks] = await pool.query<RowDataPacket[]>(

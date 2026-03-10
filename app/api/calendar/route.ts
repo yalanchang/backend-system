@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { logActivity } from '@/lib/activity-server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
-// GET - 獲取行事曆事件
+
+// GET - 根據日期範圍和其他條件獲取行事曆事件
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
@@ -18,7 +22,7 @@ export async function GET(request: NextRequest) {
             }, { status: 400 });
         }
 
-        // 基礎查詢
+  
         let query = `
             SELECT ce.*, p.name as project_name 
             FROM calendar_events ce 
@@ -88,6 +92,7 @@ export async function POST(request: NextRequest) {
         
         const body = await request.json();
         const eventId = require('uuid').v4();
+        const session = await getServerSession(authOptions);
 
         // 驗證必要欄位
         const requiredFields = ['title', 'start_time', 'end_time', 'event_type'];
@@ -120,7 +125,15 @@ export async function POST(request: NextRequest) {
         );
 
         await connection.commit();
-
+        await logActivity({
+            action: 'create',
+            description: `建立行事曆事件「${body.title}」`,
+            entity_type: 'calendar_event',
+            entity_id: eventId,
+            user_id: (session?.user as any)?.id || 'unknown',
+            user_name: session?.user?.name || undefined,
+            new_values: { title: body.title, start_time: body.start_time, end_time: body.end_time, event_type: body.event_type },
+        });
         return NextResponse.json({
             success: true,
             data: {
