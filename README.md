@@ -2,7 +2,6 @@
 
 一個現代化的專案管理後台系統，使用 Next.js 15 + React + MySQL 構建。
 
-
 ## 功能特色
 
 ### 核心功能
@@ -41,3 +40,70 @@
 ### 開發工具
 - **套件管理**: npm
 - **版本控制**: Git
+
+## 本地開發
+
+### 環境需求
+- Node.js 18+
+- MySQL 8.0+
+
+### 安裝步驟
+
+1. Clone 專案
+```bash
+git clone <repo-url>
+cd backend-system
+```
+
+2. 安裝依賴
+```bash
+npm install
+```
+
+3. 設定環境變數，建立 `.env.local`
+```env
+DATABASE_URL=mysql://user:password@localhost:3306/project_management
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
+
+4. 建立資料庫並匯入 schema
+```bash
+mysql -u root -p < schema_clean.sql
+```
+
+5. 啟動開發伺服器
+```bash
+npm run dev
+```
+
+## 部署 (Vercel + Clever Cloud)
+
+### 資料庫 - Clever Cloud MySQL
+
+1. 在 [Clever Cloud](https://console.clever-cloud.com) 建立 MySQL add-on
+2. 取得連線資訊（host、user、password、database）
+3. 使用 TablePlus ，匯入 `schema_clean.sql`
+
+### 應用程式 - Vercel
+
+1. 將專案推送到 GitHub
+2. 在 [Vercel](https://vercel.com) 匯入專案
+3. 設定以下環境變數：
+
+| 變數名稱 | 說明 |
+|---|---|
+| `DATABASE_URL` | `mysql://user:password@host:3306/dbname` |
+| `NEXTAUTH_URL` | 部署後的網址，例如 `https://your-app.vercel.app` |
+| `NEXTAUTH_SECRET` | 隨機字串，可用 `openssl rand -base64 32` 產生 |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
+
+4. 在 [Google Cloud Console](https://console.cloud.google.com) 的 OAuth 2.0 設定中，新增 Authorized redirect URI：
+```
+https://your-app.vercel.app/api/auth/callback/google
+```
+
+5. 部署完成後，Vercel 會自動在每次 push 到 main 分支時重新部署
