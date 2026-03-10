@@ -1,6 +1,13 @@
 import mysql from 'mysql2/promise';
-
-function getDbConfig() {
+interface DbConfig {
+    host: string;
+    port: number;
+    user: string;
+    password: string;
+    database: string;
+    ssl?: false | { rejectUnauthorized: boolean };
+}
+function getDbConfig(): DbConfig {
     if (process.env.DATABASE_URL) {
         try {
             const parsed = new URL(process.env.DATABASE_URL);
@@ -10,7 +17,7 @@ function getDbConfig() {
                 user: parsed.username,
                 password: parsed.password,
                 database: parsed.pathname.replace(/^\//, ''),
-                ssl: false  
+                ssl: false
             };
         } catch (error) {
             console.error('解析 DATABASE_URL 失败:', error);
@@ -28,9 +35,15 @@ function getDbConfig() {
     };
 }
 
-// 每次查詢建立新連線， Serverless
+
+
 export async function query<T>(sql: string, params?: any[]): Promise<[T, any]> {
-    const conn = await mysql.createConnection(getDbConfig());
+    const { ssl, ...config } = getDbConfig();
+    const connConfig = {
+        ...config,
+        ...(ssl !== false && ssl ? { ssl } : {}),
+    };
+    const conn = await mysql.createConnection(connConfig);
     try {
         const result = await conn.query(sql, params);
         return result as [T, any];
@@ -40,12 +53,16 @@ export async function query<T>(sql: string, params?: any[]): Promise<[T, any]> {
 }
 
 // 保留 pool （本地開發）
+const dbConfig = getDbConfig();
+const { ssl, ...configWithoutSsl } = dbConfig;
+
 const pool = mysql.createPool({
-    ...getDbConfig(),
+    ...configWithoutSsl,
     waitForConnections: true,
     connectionLimit: 2,
     queueLimit: 0,
     connectTimeout: 10000,
+    ...(ssl !== false && ssl ? { ssl } : {}),
 });
 
 export default pool;
