@@ -1,7 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
-import pool from '@/lib/db';
+import { query } from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import bcrypt from 'bcryptjs';
 
@@ -22,7 +22,7 @@ export const authOptions: NextAuthOptions = {
                     throw new Error('請輸入 Email 和密碼');
                 }
 
-                const [users] = await pool.query<RowDataPacket[]>(
+                const [users] = await query<RowDataPacket[]>(
                     'SELECT * FROM users WHERE email = ?',
                     [credentials.email]
                 );
@@ -57,13 +57,13 @@ export const authOptions: NextAuthOptions = {
         async signIn({ user, account }) {
             if (account?.provider === 'google') {
                 try {
-                    const [existing] = await pool.query<RowDataPacket[]>(
+                    const [existing] = await query<RowDataPacket[]>(
                         'SELECT * FROM users WHERE email = ?',
                         [user.email]
                     );
 
                     if (existing.length === 0) {
-                        await pool.query<ResultSetHeader>(
+                        await query<ResultSetHeader>(
                             `INSERT INTO users (name, email, avatar, provider, provider_id, role) 
                              VALUES (?, ?, ?, ?, ?, ?)`,
                             [
@@ -78,7 +78,7 @@ export const authOptions: NextAuthOptions = {
                         console.log('新 Google 用戶已建立:', user.email);
                     } else {
                         // 更新現有用戶
-                        await pool.query(
+                        await query(
                             `UPDATE users SET 
                                 name = COALESCE(?, name),
                                 avatar = COALESCE(?, avatar),
@@ -98,7 +98,7 @@ export const authOptions: NextAuthOptions = {
 
         async jwt({ token, user, account }) {
             if (account && user) {
-                const [users] = await pool.query<RowDataPacket[]>(
+                const [users] = await query<RowDataPacket[]>(
                     'SELECT id, role FROM users WHERE email = ?',
                     [user.email]
                 );

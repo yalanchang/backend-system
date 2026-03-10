@@ -6,7 +6,7 @@ function getDbConfig() {
             const parsed = new URL(process.env.DATABASE_URL);
             return {
                 host: parsed.hostname,
-                port: parsed.port ? parseInt(parsed.port) : 3306,  
+                port: parsed.port ? parseInt(parsed.port) : 3306,
                 user: parsed.username,
                 password: parsed.password,
                 database: parsed.pathname.replace(/^\//, ''),
@@ -16,34 +16,36 @@ function getDbConfig() {
             console.error('解析 DATABASE_URL 失败:', error);
         }
     }
-    // 开发环境
     return {
         host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '3306'),  
+        port: parseInt(process.env.DB_PORT || '3306'),
         user: process.env.DB_USER || 'root',
         password: process.env.DB_PASSWORD || '',
         database: process.env.DB_NAME || 'project_management',
-        ssl: process.env.NODE_ENV === 'production' 
-            ? { rejectUnauthorized: false } 
+        ssl: process.env.NODE_ENV === 'production'
+            ? { rejectUnauthorized: false }
             : undefined
     };
 }
 
-const dbConfig = getDbConfig();
+// 每次查詢建立新連線， Serverless
+export async function query<T>(sql: string, params?: any[]): Promise<[T, any]> {
+    const conn = await mysql.createConnection(getDbConfig());
+    try {
+        const result = await conn.query(sql, params);
+        return result as [T, any];
+    } finally {
+        await conn.end();
+    }
+}
+
+// 保留 pool （本地開發）
 const pool = mysql.createPool({
-    host: dbConfig.host,
-    port: dbConfig.port,
-    user: dbConfig.user,
-    password: dbConfig.password,
-    database: dbConfig.database,
-    ssl: dbConfig.ssl,
-    
+    ...getDbConfig(),
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: 2,
     queueLimit: 0,
     connectTimeout: 10000,
-    idleTimeout: 60000,
-    charset: 'utf8mb4',
 });
 
 export default pool;
