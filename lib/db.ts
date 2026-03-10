@@ -10,7 +10,7 @@ function getDbConfig() {
                 user: parsed.username,
                 password: parsed.password,
                 database: parsed.pathname.replace(/^\//, ''),
-                ssl: { rejectUnauthorized: false }
+                ssl: false  
             };
         } catch (error) {
             console.error('解析 DATABASE_URL 失败:', error);
