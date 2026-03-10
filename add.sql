@@ -138,19 +138,24 @@ CREATE TABLE IF NOT EXISTS task_tags (
 -- ============================
 -- 活動日誌表
 -- ============================
-CREATE TABLE IF NOT EXISTS activity_logs (
+CREATE TABLE activity_logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT,
     action VARCHAR(50) NOT NULL,
-    entity_type ENUM('project', 'task', 'user', 'comment') NOT NULL,
-    entity_id INT NOT NULL,
-    old_value TEXT,
-    new_value TEXT,
-    description TEXT,
+    description TEXT NOT NULL,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id VARCHAR(36) NOT NULL,
+    user_id VARCHAR(36) NOT NULL,
+    user_name VARCHAR(100),
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    old_values JSON,
+    new_values JSON,
+    metadata JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    INDEX idx_entity (entity_type, entity_id),
+    INDEX idx_user (user_id),
+    INDEX idx_created_at (created_at)
 );
-
 -- ============================
 -- 時間記錄表
 -- ============================
