@@ -27,8 +27,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
     };
 
     return (
-        <aside className="w-64 bg-gray-900 text-white min-h-screen p-4 flex flex-col pb-safe ">
-            <div className="flex items-center justify-between mb-6">
+        <aside className="w-64 bg-gray-900 text-white h-full p-4 flex flex-col overflow-y-auto">
+            <div className="flex items-center justify-between p-4 mb-2">
                 <h1 className="text-xl font-bold">專案管理</h1>
                 <button
                     onClick={onClose}
@@ -38,7 +38,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 </button>
             </div>
 
-            <nav className="space-y-1 flex-1">
+            <nav className="space-y-1 px-4 flex-1">
                 {menuItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
@@ -58,7 +58,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 })}
             </nav>
 
-            <div className="border-t border-gray-700 pt-4">
+            <div className="border-t border-gray-700 p-4 mt-auto sticky bottom-0 bg-gray-900">
                 {session?.user && (
                     <div className="px-4 py-2 mb-2">
                         <p className="text-sm text-gray-400">登入為</p>

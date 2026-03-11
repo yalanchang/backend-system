@@ -7,7 +7,7 @@ import CalendarWrapper from '@/components/CalendarWrapper';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { CalendarEvent, Project } from '@/lib/types';
-import { FiPlus, FiFilter, FiCalendar, FiUsers, FiBriefcase, FiMapPin } from 'react-icons/fi';
+import { FiFilter, FiCalendar, FiUsers, FiBriefcase, FiMapPin } from 'react-icons/fi';
 
 const localizer = momentLocalizer(moment);
 
@@ -426,7 +426,6 @@ export default function CalendarPage() {
                                 onClick={() => setShowNewEventModal(true)}
                                 className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                             >
-                                <FiPlus className="mr-2" />
                                 新增事件
                             </button>
                             <button

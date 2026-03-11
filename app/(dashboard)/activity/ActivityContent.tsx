@@ -34,10 +34,14 @@ export default function ActivityContent() {
   });
 
   const [showFilters, setShowFilters] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
     fetchActivities();
-  }, [searchParams]);
+    fetch('/api/users').then(r => r.json()).then(d => {
+        if (d.success) setUsers(d.data);
+    });
+}, [searchParams]);
 
   const buildQueryString = () => {
     const params = new URLSearchParams();
@@ -150,8 +154,12 @@ export default function ActivityContent() {
     if (key === 'status') return statusMap[value] || value;
     if (key === 'priority') return priorityMap[value] || value;
     if (key === 'role') return roleMap[value] || value;
+    if (key === 'owner_id' || key === 'assignee_id') {
+        const user = users.find(u => String(u.id) === String(value));
+        return user ? user.name : `ID: ${value}`;
+    }
     return String(value);
-  }
+}
 
   const renderChangeDetails = (activity: ActivityLog) => {
     // create 動作：顯示建立內容

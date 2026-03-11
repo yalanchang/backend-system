@@ -73,10 +73,9 @@ export default function ProjectEditPage() {
       setLoading(true);
       setError(null);
 
-      // 同時取得專案資料和使用者列表
       const [projectResponse, usersResponse] = await Promise.all([
         fetch(`/api/projects/${projectId}`),
-        fetch('/api/users') // 假設你有這個 API
+        fetch('/api/users') 
       ]);
 
       const projectData = await projectResponse.json();
