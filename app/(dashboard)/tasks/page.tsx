@@ -390,36 +390,66 @@ function TaskModal({ task, projects, users, onClose, onSave }: {
     };
 
     return (
-<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-8">
-<div className="bg-white rounded-xl p-5 sm:p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-5">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 sm:p-8">
+            <div className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4 sm:mb-5">
                     <h2 className="text-lg sm:text-xl font-bold">{task ? '編輯任務' : '新增任務'}</h2>
-                    <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600">
+                    <button 
+                        onClick={onClose} 
+                        className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 -mr-1"
+                        type="button"
+                    >
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                
+                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1.5">所屬專案 *</label>
-                        <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} className="w-full px-3 py-2.5 border rounded-lg text-sm" required>
+                        <label className="block text-sm font-medium mb-1">所屬專案 *</label>
+                        <select 
+                            value={form.project_id} 
+                            onChange={(e) => setForm({ ...form, project_id: e.target.value })} 
+                            className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white"
+                            required
+                        >
                             <option value="">選擇專案</option>
                             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium mb-1.5">任務標題 *</label>
-                        <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2.5 border rounded-lg text-sm" required />
+                        <label className="block text-sm font-medium mb-1">任務標題 *</label>
+                        <input 
+                            type="text" 
+                            value={form.title} 
+                            onChange={(e) => setForm({ ...form, title: e.target.value })} 
+                            className="w-full px-3 py-2.5 border rounded-lg text-sm"
+                            placeholder="請輸入任務標題"
+                            required 
+                        />
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium mb-1.5">描述</label>
-                        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2.5 border rounded-lg text-sm" rows={3} />
+                        <label className="block text-sm font-medium mb-1">描述</label>
+                        <textarea 
+                            value={form.description} 
+                            onChange={(e) => setForm({ ...form, description: e.target.value })} 
+                            className="w-full px-3 py-2.5 border rounded-lg text-sm" 
+                            rows={3}
+                            placeholder="請輸入任務描述（選填）"
+                        />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">狀態</label>
-                            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2.5 border rounded-lg text-sm">
+                            <label className="block text-sm font-medium mb-1">狀態</label>
+                            <select 
+                                value={form.status} 
+                                onChange={(e) => setForm({ ...form, status: e.target.value })} 
+                                className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white"
+                            >
                                 <option value="todo">待處理</option>
                                 <option value="in_progress">進行中</option>
                                 <option value="review">審核中</option>
@@ -427,8 +457,12 @@ function TaskModal({ task, projects, users, onClose, onSave }: {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">優先級</label>
-                            <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full px-3 py-2.5 border rounded-lg text-sm">
+                            <label className="block text-sm font-medium mb-1">優先級</label>
+                            <select 
+                                value={form.priority} 
+                                onChange={(e) => setForm({ ...form, priority: e.target.value })} 
+                                className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white"
+                            >
                                 <option value="low">低</option>
                                 <option value="medium">中</option>
                                 <option value="high">高</option>
@@ -436,26 +470,57 @@ function TaskModal({ task, projects, users, onClose, onSave }: {
                             </select>
                         </div>
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium mb-1.5">負責人</label>
-                        <select value={form.assignee_id} onChange={(e) => setForm({ ...form, assignee_id: e.target.value })} className="w-full px-3 py-2.5 border rounded-lg text-sm">
+                        <label className="block text-sm font-medium mb-1">負責人</label>
+                        <select 
+                            value={form.assignee_id} 
+                            onChange={(e) => setForm({ ...form, assignee_id: e.target.value })} 
+                            className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white"
+                        >
                             <option value="">未指派</option>
                             {users.map((u) => <option key={u.id} value={String(u.id)}>{u.name}</option>)}
                         </select>
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium mb-1.5">截止日期</label>
-                        <input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className="w-full px-3 py-2.5 border rounded-lg text-sm" />
+                        <label className="block text-sm font-medium mb-1">截止日期</label>
+                        <input 
+                            type="date" 
+                            value={form.due_date} 
+                            onChange={(e) => setForm({ ...form, due_date: e.target.value })} 
+                            className="w-full px-3 py-2.5 border rounded-lg text-sm"
+                        />
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium mb-1.5">預估工時</label>
-                        <input type="number" value={form.estimated_hours} onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} className="w-full px-3 py-2.5 border rounded-lg text-sm" placeholder="小時" min="0" step="0.5" />
+                        <label className="block text-sm font-medium mb-1">預估工時</label>
+                        <input 
+                            type="number" 
+                            value={form.estimated_hours} 
+                            onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} 
+                            className="w-full px-3 py-2.5 border rounded-lg text-sm" 
+                            placeholder="請輸入小時"
+                            min="0" 
+                            step="0.5" 
+                        />
                     </div>
-                    <div className="flex gap-3 pt-2">
-                        <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium">
+
+                    <div className="flex gap-2 sm:gap-3 pt-2">
+                        <button 
+                            type="submit" 
+                            disabled={saving} 
+                            className="flex-1 px-4 py-3 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+                        >
                             {saving ? '儲存中...' : (task ? '更新任務' : '建立任務')}
                         </button>
-                        <button type="button" onClick={onClose} className="px-4 py-2.5 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm">取消</button>
+                        <button 
+                            type="button" 
+                            onClick={onClose} 
+                            className="px-4 py-3 sm:py-2.5 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm font-medium"
+                        >
+                            取消
+                        </button>
                     </div>
                 </form>
             </div>
