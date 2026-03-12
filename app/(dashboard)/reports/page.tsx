@@ -79,8 +79,8 @@ export default function ReportsPage() {
 
     // 任務狀態圓餅圖
     const taskStatusData = {
-        labels: data.taskStats.by_status.map(s => getStatusLabel(s.status)),
-        datasets: [{
+        labels: data.weeklyTasks.map(d => formatDate(d.date)),
+                datasets: [{
             data: data.taskStats.by_status.map(s => s.count),
             backgroundColor: ['#9CA3AF', '#3B82F6', '#F59E0B', '#22C55E'],
         }],
@@ -288,4 +288,8 @@ function calculateCompletionRate(byStatus: { status: string; count: number }[]) 
     const total = byStatus.reduce((sum, s) => sum + s.count, 0);
     const done = byStatus.find(s => s.status === 'done')?.count || 0;
     return total > 0 ? Math.round((done / total) * 100) : 0;
+}
+function formatDate(dateStr: string) {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
 }

@@ -171,7 +171,6 @@ export default function ProjectDetailPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        {/* 頁面標題和操作按鈕 */}
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <Link 
@@ -181,7 +180,6 @@ export default function ProjectDetailPage() {
               <FiArrowLeft className="mr-2" /> 返回專案列表
             </Link>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">{project.name}</h1>
-            <p className="text-gray-600 mt-2">專案 ID: {project.id}</p>
           </div>
           
           <div className="flex space-x-3">
